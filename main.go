@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 `
 
-// 🎯 HTML TEMPLATE RÉVOLUTIONNAIRE
+// 🎯 HTML TEMPLATE RÉVOLUTIONNAIRE - FIXED CSS INJECTION
 const htmlTemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -422,7 +422,244 @@ const htmlTemplate = `
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>{{.PageTitle}}</title>
 	<meta name="description" content="GO Frontend Revolutionary - Proof that ILN works">
-	<style>{{.CSS}}</style>
+	<style>
+/* 🎨 GO FRONTEND REVOLUTIONARY - CSS MODERNE - DIRECT INJECTION */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+	background-size: 400% 400%;
+	animation: gradientShift 15s ease infinite;
+	min-height: 100vh;
+	overflow-x: hidden;
+	color: white;
+}
+
+@keyframes gradientShift {
+	0% { background-position: 0% 50%; }
+	50% { background-position: 100% 50%; }
+	100% { background-position: 0% 50%; }
+}
+
+.main-container {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 2rem;
+	position: relative;
+	z-index: 10;
+}
+
+.hero-section {
+	text-align: center;
+	margin-bottom: 4rem;
+	position: relative;
+}
+
+.hero-title {
+	font-size: clamp(2.5rem, 6vw, 5rem);
+	font-weight: 900;
+	background: linear-gradient(135deg, #ffffff, #f0f8ff, #e6e6fa);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	text-shadow: 0 0 30px rgba(255,255,255,0.5);
+	margin-bottom: 1rem;
+	animation: titlePulse 3s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+	0%, 100% { transform: scale(1) rotateY(0deg); }
+	50% { transform: scale(1.05) rotateY(5deg); }
+}
+
+.hero-subtitle {
+	font-size: clamp(1rem, 3vw, 1.5rem);
+	opacity: 0.9;
+	margin-bottom: 2rem;
+	font-weight: 300;
+}
+
+.proof-badge {
+	display: inline-block;
+	background: rgba(255, 255, 255, 0.2);
+	backdrop-filter: blur(20px);
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	border-radius: 50px;
+	padding: 1rem 2rem;
+	margin: 1rem;
+	font-weight: 600;
+	animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+	0%, 100% { transform: translateY(0px); }
+	50% { transform: translateY(-10px); }
+}
+
+.features-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 2rem;
+	margin: 3rem 0;
+}
+
+.feature-card {
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 20px;
+	padding: 2rem;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.feature-card:hover {
+	transform: translateY(-10px) scale(1.02);
+	box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+	border-color: rgba(255,255,255,0.5);
+}
+
+.feature-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+	display: block;
+}
+
+.feature-title {
+	font-size: 1.5rem;
+	font-weight: 700;
+	margin-bottom: 1rem;
+	color: #ffffff;
+}
+
+.demo-section {
+	background: rgba(0, 0, 0, 0.2);
+	backdrop-filter: blur(20px);
+	border-radius: 20px;
+	padding: 3rem;
+	margin: 4rem 0;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	text-align: center;
+}
+
+.demo-title {
+	font-size: 2.5rem;
+	margin-bottom: 2rem;
+	color: #ffffff;
+}
+
+.action-buttons {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin: 2rem 0;
+}
+
+.action-btn {
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
+	border: none;
+	padding: 15px 30px;
+	border-radius: 50px;
+	font-weight: 600;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	min-width: 150px;
+	text-transform: uppercase;
+}
+
+.action-btn:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+	filter: brightness(1.1);
+}
+
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1.5rem;
+	margin: 3rem 0;
+}
+
+.stat-card {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 15px;
+	padding: 1.5rem;
+	text-align: center;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-number {
+	font-size: 2.5rem;
+	font-weight: 900;
+	color: #ffffff;
+	display: block;
+	margin-bottom: 0.5rem;
+}
+
+.stat-label {
+	opacity: 0.8;
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.terminal {
+	background: rgba(0, 0, 0, 0.8);
+	border-radius: 15px;
+	padding: 2rem;
+	font-family: monospace;
+	color: #00ff00;
+	margin: 2rem 0;
+	border: 1px solid rgba(0, 255, 0, 0.3);
+	min-height: 200px;
+	text-align: left;
+}
+
+.terminal-header {
+	color: #ffffff;
+	margin-bottom: 1rem;
+	font-weight: bold;
+}
+
+.sceptic-destroyer {
+	background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+	color: #333;
+	padding: 3rem;
+	border-radius: 20px;
+	margin: 4rem 0;
+	text-align: center;
+	font-weight: bold;
+	font-size: 1.2rem;
+	box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+}
+
+.loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+@media (max-width: 768px) {
+	.features-grid {
+		grid-template-columns: 1fr;
+	}
+	.action-buttons {
+		flex-direction: column;
+		align-items: center;
+	}
+	.stats-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+	</style>
 </head>
 <body>
 	<div class="main-container">
@@ -552,14 +789,13 @@ func (app *GoFrontendApp) handleHome(w http.ResponseWriter, r *http.Request) {
 		APIStatus:    "operational",
 	}
 	
-	pageData := struct {
-		AppData
-		CSS string
-		JS  string
-	}{
-		AppData: data,
-		CSS:     cssStyles,
-		JS:      jsCode,
+	// Create the complete page - SIMPLIFIED TEMPLATE DATA  
+	pageData := AppData{
+		PageTitle:    "🔥 GO Frontend Revolutionary - ILN Proof",
+		CurrentTime:  time.Since(startTime).Round(time.Second).String(),
+		RequestCount: requestCounter,
+		ActiveUsers:  activeUsers,
+		APIStatus:    "operational",
 	}
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
