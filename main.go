@@ -1,819 +1,455 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"html/template"
-	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
-// ================================================================================
-// GO RAISONNANT COMME JAVASCRIPT - ESSENCES ASSIMILÉES
-// ================================================================================
+// ===== SVELTE PHILOSOPHY ABSORBED IN GO (ZERO EXTERNAL DEPS) =====
 
-// JSEvent : Go qui comprend les événements JavaScript nativement
-type JSEvent struct {
-	Type     string                 `json:"type"`
-	Target   string                 `json:"target"`
-	Data     map[string]interface{} `json:"data"`
-	Callback func(JSEvent)          `json:"-"`
+// ReactiveState : Go qui pense comme Svelte store - FROM SCRATCH
+type ReactiveState struct {
+	count      int
+	doubled    int
+	users      int
+	lastUpdate string
+	mu         sync.RWMutex
+	channels   map[string]chan string // Go channels = Svelte reactivity
 }
 
-// JSComponent : Go qui raisonne en composants React/Vue
-type JSComponent struct {
-	Name     string
-	State    map[string]interface{}
-	Props    map[string]interface{}
-	Hooks    []func()
-	Template string
-}
-
-// CSSAnimator : Go qui comprend les animations CSS nativement
-type CSSAnimator struct {
-	Animations map[string]CSSAnimation
-}
-
-type CSSAnimation struct {
-	Duration     string
-	Easing       string
-	Transform    string
-	Properties   map[string]string
-	Keyframes    []CSSKeyframe
-	Interactive  bool
-}
-
-type CSSKeyframe struct {
-	Percent    int
-	Properties map[string]string
-}
-
-// FrontendServer : Go qui orchestre comme un framework JS moderne
-type FrontendServer struct {
-	components  map[string]*JSComponent
-	events      chan JSEvent
-	animations  *CSSAnimator
-	reactiveData map[string]interface{}
-}
-
-// ================================================================================
-// GO PENSANT COMME JAVASCRIPT - RÉACTIVITÉ NATIVE
-// ================================================================================
-
-func (fs *FrontendServer) useState(name string, initialValue interface{}) (interface{}, func(interface{})) {
-	// Hook useState style React dans Go pur
-	if fs.reactiveData == nil {
-		fs.reactiveData = make(map[string]interface{})
+func NewReactiveState() *ReactiveState {
+	rs := &ReactiveState{
+		count:      0,
+		doubled:    0,
+		users:      0,
+		lastUpdate: "Never",
+		channels:   make(map[string]chan string),
 	}
 	
-	if _, exists := fs.reactiveData[name]; !exists {
-		fs.reactiveData[name] = initialValue
-	}
+	// SVELTE PHILOSOPHY: Reactive propagation via Go channels
+	rs.channels["updates"] = make(chan string, 100)
 	
-	getter := func() interface{} {
-		return fs.reactiveData[name]
-	}
+	// Go goroutine = Svelte reactive loop
+	go rs.reactiveLoop()
 	
-	setter := func(newValue interface{}) {
-		fs.reactiveData[name] = newValue
-		// Déclencher re-render automatique comme React
-		fs.triggerRerender(name)
-	}
-	
-	return getter(), setter
+	return rs
 }
 
-func (fs *FrontendServer) useEffect(effect func(), dependencies []string) {
-	// Hook useEffect style React dans Go
-	go func() {
-		effect()
-		// Surveiller les dépendances pour re-exécution
-		for {
-			time.Sleep(100 * time.Millisecond)
-			// Logique de surveillance des dépendances
-			effect()
-		}
-	}()
-}
-
-func (fs *FrontendServer) addEventListener(eventType string, selector string, callback func(JSEvent)) {
-	// addEventListener JavaScript natif dans Go
-	if fs.events == nil {
-		fs.events = make(chan JSEvent, 100)
-	}
-	
-	go func() {
-		for event := range fs.events {
-			if event.Type == eventType && strings.Contains(event.Target, selector) {
-				callback(event)
-			}
-		}
-	}()
-}
-
-func (fs *FrontendServer) triggerRerender(stateName string) {
-	// Re-render automatique comme dans les frameworks JS modernes
-	fmt.Printf("🔄 Re-rendering components dependent on: %s\n", stateName)
-	// Logique de re-render sélectif
-}
-
-// ================================================================================
-// GO PENSANT COMME CSS - ANIMATIONS NATIVES
-// ================================================================================
-
-func (ca *CSSAnimator) createAnimation(name string, duration string, easing string) *CSSAnimation {
-	// Go qui crée des animations CSS comme un designer
-	if ca.Animations == nil {
-		ca.Animations = make(map[string]CSSAnimation)
-	}
-	
-	animation := CSSAnimation{
-		Duration:   duration,
-		Easing:     easing,
-		Properties: make(map[string]string),
-		Keyframes:  []CSSKeyframe{},
-		Interactive: true,
-	}
-	
-	ca.Animations[name] = animation
-	return &animation
-}
-
-func (ca *CSSAnimator) addKeyframe(animationName string, percent int, properties map[string]string) {
-	// Go qui construit des keyframes CSS comme un animateur
-	if anim, exists := ca.Animations[animationName]; exists {
-		keyframe := CSSKeyframe{
-			Percent:    percent,
-			Properties: properties,
-		}
-		anim.Keyframes = append(anim.Keyframes, keyframe)
-		ca.Animations[animationName] = anim
+// SVELTE $: REACTIVE STATEMENTS - Go native implementation
+func (rs *ReactiveState) reactiveLoop() {
+	for update := range rs.channels["updates"] {
+		// SVELTE THINKING: Auto-recalculate derived values
+		rs.mu.Lock()
+		rs.doubled = rs.count * 2        // $: doubled = count * 2
+		rs.lastUpdate = getCurrentTime()  // $: lastUpdate = now()
+		rs.mu.Unlock()
+		
+		// SVELTE PHILOSOPHY: Broadcast changes (like Svelte stores)
+		rs.broadcastUpdate(update)
 	}
 }
 
-func (ca *CSSAnimator) generateCSS() string {
-	// Go qui génère CSS pur et optimisé
-	var cssBuilder strings.Builder
-	
-	cssBuilder.WriteString(`
-		/* GO-GENERATED CSS - NEXUS AXION FRONTEND */
-		:root {
-			--go-primary: #00ADD8;
-			--go-secondary: #5DC9E2;
-			--nexus-gradient: linear-gradient(135deg, var(--go-primary), var(--go-secondary));
-		}
-		
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-		}
-		
-		body {
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			background: var(--nexus-gradient);
-			min-height: 100vh;
-			overflow-x: hidden;
-		}
-		
-		.nexus-container {
-			max-width: 1200px;
-			margin: 0 auto;
-			padding: 20px;
-			display: grid;
-			gap: 20px;
-			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		}
-		
-		.go-component {
-			background: rgba(255, 255, 255, 0.95);
-			border-radius: 20px;
-			padding: 30px;
-			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-			backdrop-filter: blur(10px);
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			position: relative;
-			overflow: hidden;
-		}
-		
-		.go-component::before {
-			content: '';
-			position: absolute;
-			top: -50%;
-			left: -50%;
-			width: 200%;
-			height: 200%;
-			background: conic-gradient(from 0deg at 50% 50%, 
-				transparent 0deg, 
-				rgba(0, 173, 216, 0.1) 90deg, 
-				transparent 180deg,
-				rgba(93, 201, 226, 0.1) 270deg,
-				transparent 360deg);
-			animation: go-rotation 20s linear infinite;
-			pointer-events: none;
-		}
-		
-		.go-component:hover {
-			transform: translateY(-10px) scale(1.02);
-			box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
-		}
-		
-		.reactive-counter {
-			text-align: center;
-			position: relative;
-			z-index: 1;
-		}
-		
-		.counter-display {
-			font-size: 4rem;
-			font-weight: 900;
-			background: var(--nexus-gradient);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			margin: 20px 0;
-			animation: go-pulse 2s ease-in-out infinite alternate;
-		}
-		
-		.go-button {
-			background: var(--nexus-gradient);
-			border: none;
-			padding: 15px 30px;
-			border-radius: 50px;
-			color: white;
-			font-weight: bold;
-			font-size: 1rem;
-			cursor: pointer;
-			margin: 10px;
-			transition: all 0.3s ease;
-			position: relative;
-			overflow: hidden;
-		}
-		
-		.go-button::before {
-			content: '';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			width: 0;
-			height: 0;
-			background: rgba(255, 255, 255, 0.3);
-			border-radius: 50%;
-			transition: all 0.6s ease;
-			transform: translate(-50%, -50%);
-		}
-		
-		.go-button:hover::before {
-			width: 300px;
-			height: 300px;
-		}
-		
-		.go-button:hover {
-			transform: scale(1.1);
-			box-shadow: 0 15px 30px rgba(0, 173, 216, 0.4);
-		}
-		
-		.go-button:active {
-			transform: scale(0.95);
-		}
-		
-		.animation-playground {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-			gap: 20px;
-			margin: 30px 0;
-		}
-		
-		.animated-box {
-			width: 100px;
-			height: 100px;
-			background: var(--nexus-gradient);
-			border-radius: 20px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			color: white;
-			font-weight: bold;
-			cursor: pointer;
-			transition: all 0.3s ease;
-		}
-		
-		.animated-box:hover {
-			animation: go-morph 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-		}
-		
-		.status-indicator {
-			display: inline-block;
-			width: 12px;
-			height: 12px;
-			border-radius: 50%;
-			background: #4CAF50;
-			animation: go-heartbeat 1.5s ease-in-out infinite;
-			margin-right: 10px;
-		}
-		
-		.nexus-title {
-			text-align: center;
-			font-size: 3rem;
-			font-weight: 900;
-			background: var(--nexus-gradient);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			margin-bottom: 30px;
-			position: relative;
-		}
-		
-		.nexus-subtitle {
-			text-align: center;
-			color: rgba(0, 0, 0, 0.7);
-			font-size: 1.2rem;
-			margin-bottom: 40px;
-			font-weight: 300;
-		}
-		
-		@keyframes go-rotation {
-			from { transform: rotate(0deg); }
-			to { transform: rotate(360deg); }
-		}
-		
-		@keyframes go-pulse {
-			0% { transform: scale(1); }
-			100% { transform: scale(1.1); }
-		}
-		
-		@keyframes go-morph {
-			0% { 
-				transform: scale(1) rotate(0deg);
-				border-radius: 20px;
-			}
-			25% {
-				transform: scale(1.2) rotate(90deg);
-				border-radius: 50%;
-			}
-			50% {
-				transform: scale(0.8) rotate(180deg);
-				border-radius: 10px;
-			}
-			75% {
-				transform: scale(1.3) rotate(270deg);
-				border-radius: 30px;
-			}
-			100% {
-				transform: scale(1) rotate(360deg);
-				border-radius: 20px;
-			}
-		}
-		
-		@keyframes go-heartbeat {
-			0% { 
-				transform: scale(1);
-				opacity: 1;
-			}
-			50% {
-				transform: scale(1.3);
-				opacity: 0.7;
-			}
-			100% {
-				transform: scale(1);
-				opacity: 1;
-			}
-		}
-		
-		@media (max-width: 768px) {
-			.nexus-container {
-				grid-template-columns: 1fr;
-				padding: 10px;
-			}
-			
-			.nexus-title {
-				font-size: 2rem;
-			}
-			
-			.counter-display {
-				font-size: 3rem;
-			}
-		}
-	`)
-	
-	// Générer CSS pour animations personnalisées
-	for name, animation := range ca.Animations {
-		cssBuilder.WriteString(fmt.Sprintf("\n@keyframes %s {\n", name))
-		for _, keyframe := range animation.Keyframes {
-			cssBuilder.WriteString(fmt.Sprintf("  %d%% {\n", keyframe.Percent))
-			for property, value := range keyframe.Properties {
-				cssBuilder.WriteString(fmt.Sprintf("    %s: %s;\n", property, value))
-			}
-			cssBuilder.WriteString("  }\n")
-		}
-		cssBuilder.WriteString("}\n")
-	}
-	
-	return cssBuilder.String()
+func (rs *ReactiveState) broadcastUpdate(update string) {
+	// Go channels = Svelte reactive notifications
+	fmt.Printf("🔄 Reactive update: %s\n", update)
 }
 
-// ================================================================================
-// GO PENSANT COMME UN FRAMEWORK JAVASCRIPT MODERNE
-// ================================================================================
-
-func (fs *FrontendServer) createComponent(name string, props map[string]interface{}) *JSComponent {
-	// Go qui crée des composants comme React/Vue
-	if fs.components == nil {
-		fs.components = make(map[string]*JSComponent)
-	}
+// SVELTE STORE METHODS - Go native implementation
+func (rs *ReactiveState) SetCount(newCount int) {
+	rs.mu.Lock()
+	rs.count = newCount
+	rs.mu.Unlock()
 	
-	component := &JSComponent{
-		Name:  name,
-		State: make(map[string]interface{}),
-		Props: props,
-		Hooks: []func(){},
-	}
-	
-	fs.components[name] = component
-	return component
-}
-
-func (fs *FrontendServer) renderHTML() string {
-	// Go qui génère HTML comme un template engine moderne
-	return `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>🚀 GO-FRONTEND RÉVOLUTIONNAIRE - NEXUS AXION</title>
-	<style>` + fs.animations.generateCSS() + `</style>
-</head>
-<body>
-	<div class="nexus-container">
-		<h1 class="nexus-title">🚀 GO-FRONTEND</h1>
-		<p class="nexus-subtitle">
-			<span class="status-indicator"></span>
-			Le premier Go de l'histoire qui raisonne en JavaScript + CSS pur
-		</p>
-		
-		<div class="go-component reactive-counter">
-			<h2>💫 Compteur Réactif Go-React</h2>
-			<div class="counter-display" id="counter">0</div>
-			<button class="go-button" onclick="incrementCounter()">⚡ Incrémenter</button>
-			<button class="go-button" onclick="decrementCounter()">⬇️ Décrémenter</button>
-			<button class="go-button" onclick="resetCounter()">🔄 Reset</button>
-		</div>
-		
-		<div class="go-component">
-			<h2>🎨 Animations CSS Générées par Go</h2>
-			<div class="animation-playground">
-				<div class="animated-box">1</div>
-				<div class="animated-box">2</div>
-				<div class="animated-box">3</div>
-				<div class="animated-box">4</div>
-			</div>
-			<p>Hover sur les boîtes pour voir les animations Go-CSS !</p>
-		</div>
-		
-		<div class="go-component">
-			<h2>⚡ Événements JavaScript Natifs</h2>
-			<button class="go-button" onclick="triggerGoEvent('click', 'button', {message: 'Hello from Go!'})">
-				Déclencher Event Go
-			</button>
-			<button class="go-button" onclick="showGoAlert()">
-				Alert Go-Style
-			</button>
-			<div id="event-log"></div>
-		</div>
-		
-		<div class="go-component">
-			<h2>🔮 State Management Go-Redux</h2>
-			<p>État global géré par Go backend :</p>
-			<div id="global-state">
-				<strong>Connexions actives:</strong> <span id="connections">1</span><br>
-				<strong>Dernière action:</strong> <span id="last-action">Chargement initial</span><br>
-				<strong>Timestamp:</strong> <span id="timestamp">{{.Timestamp}}</span>
-			</div>
-		</div>
-	</div>
-
-	<script>
-		// JavaScript généré par Go - Tunnels adaptatifs
-		let counter = 0;
-		let ws;
-		
-		// Connexion WebSocket pour réactivité temps réel
-		function connectWebSocket() {
-			ws = new WebSocket('ws://localhost:8080/ws');
-			
-			ws.onopen = function() {
-				console.log('🔗 Go-Frontend WebSocket connecté');
-				updateLastAction('WebSocket connecté');
-			};
-			
-			ws.onmessage = function(event) {
-				const data = JSON.parse(event.data);
-				handleGoMessage(data);
-			};
-			
-			ws.onclose = function() {
-				console.log('❌ Connexion fermée, reconnexion...');
-				setTimeout(connectWebSocket, 3000);
-			};
-		}
-		
-		function handleGoMessage(data) {
-			switch(data.type) {
-				case 'counter-update':
-					document.getElementById('counter').textContent = data.value;
-					updateLastAction('Compteur mis à jour: ' + data.value);
-					break;
-				case 'global-state-update':
-					updateGlobalState(data.state);
-					break;
-			}
-		}
-		
-		function incrementCounter() {
-			counter++;
-			document.getElementById('counter').textContent = counter;
-			sendToGo({type: 'increment', value: counter});
-			updateLastAction('Incrément: ' + counter);
-		}
-		
-		function decrementCounter() {
-			counter--;
-			document.getElementById('counter').textContent = counter;
-			sendToGo({type: 'decrement', value: counter});
-			updateLastAction('Décrément: ' + counter);
-		}
-		
-		function resetCounter() {
-			counter = 0;
-			document.getElementById('counter').textContent = counter;
-			sendToGo({type: 'reset', value: counter});
-			updateLastAction('Reset compteur');
-		}
-		
-		function triggerGoEvent(type, target, data) {
-			const event = {type, target, data, timestamp: Date.now()};
-			sendToGo({type: 'js-event', event: event});
-			logEvent(event);
-			updateLastAction('Événement déclenché: ' + type);
-		}
-		
-		function showGoAlert() {
-			alert('🎉 Alert déclenchée par Go-Frontend!\n\nCe message vient du Go qui pense en JavaScript!');
-			updateLastAction('Alert Go affichée');
-		}
-		
-		function sendToGo(message) {
-			if (ws && ws.readyState === WebSocket.OPEN) {
-				ws.send(JSON.stringify(message));
-			}
-		}
-		
-		function logEvent(event) {
-			const log = document.getElementById('event-log');
-			const entry = document.createElement('div');
-			entry.style.margin = '10px 0';
-			entry.style.padding = '10px';
-			entry.style.background = 'rgba(0, 173, 216, 0.1)';
-			entry.style.borderRadius = '10px';
-			entry.innerHTML = \`<strong>\${event.type}</strong>: \${JSON.stringify(event.data)}\`;
-			log.appendChild(entry);
-		}
-		
-		function updateGlobalState(state) {
-			document.getElementById('connections').textContent = state.connections || 1;
-			document.getElementById('timestamp').textContent = new Date().toLocaleString();
-		}
-		
-		function updateLastAction(action) {
-			document.getElementById('last-action').textContent = action;
-			document.getElementById('timestamp').textContent = new Date().toLocaleString();
-		}
-		
-		// Auto-connect WebSocket au chargement
-		window.onload = function() {
-			connectWebSocket();
-			updateLastAction('Page chargée');
-			
-			// Animation de chargement
-			document.querySelectorAll('.go-component').forEach((component, index) => {
-				component.style.opacity = '0';
-				component.style.transform = 'translateY(50px)';
-				
-				setTimeout(() => {
-					component.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-					component.style.opacity = '1';
-					component.style.transform = 'translateY(0)';
-				}, index * 200);
-			});
-		};
-		
-		// Heartbeat pour maintenir connexion
-		setInterval(() => {
-			if (ws && ws.readyState === WebSocket.OPEN) {
-				sendToGo({type: 'ping', timestamp: Date.now()});
-			}
-		}, 5000);
-	</script>
-</body>
-</html>`
-}
-
-// ================================================================================
-// SERVEUR WEB GO AVEC LOGIQUE FRONTEND NATIVE
-// ================================================================================
-
-func NewFrontendServer() *FrontendServer {
-	fs := &FrontendServer{
-		components:   make(map[string]*JSComponent),
-		events:       make(chan JSEvent, 100),
-		reactiveData: make(map[string]interface{}),
-		animations:   &CSSAnimator{Animations: make(map[string]CSSAnimation)},
-	}
-	
-	// Initialiser animations Go-CSS
-	fs.initializeAnimations()
-	
-	// Initialiser composants Go-React
-	fs.initializeComponents()
-	
-	return fs
-}
-
-func (fs *FrontendServer) initializeAnimations() {
-	// Go qui crée des animations comme un designer CSS expert
-	fs.animations.createAnimation("go-bounce", "1s", "cubic-bezier(0.68, -0.55, 0.265, 1.55)")
-	fs.animations.addKeyframe("go-bounce", 0, map[string]string{
-		"transform": "scale(1)",
-		"opacity":   "1",
-	})
-	fs.animations.addKeyframe("go-bounce", 50, map[string]string{
-		"transform": "scale(1.2)",
-		"opacity":   "0.8",
-	})
-	fs.animations.addKeyframe("go-bounce", 100, map[string]string{
-		"transform": "scale(1)",
-		"opacity":   "1",
-	})
-}
-
-func (fs *FrontendServer) initializeComponents() {
-	// Go qui crée des composants comme React
-	counter := fs.createComponent("Counter", map[string]interface{}{
-		"initialValue": 0,
-		"step":         1,
-	})
-	
-	counter.State["value"] = 0
-	counter.State["history"] = []int{}
-}
-
-func (fs *FrontendServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	// WebSocket pour réactivité temps réel Go ↔ Frontend
-	upgrader := websocketUpgrader{}
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Printf("Erreur WebSocket: %v", err)
-		return
-	}
-	defer conn.Close()
-	
-	fmt.Println("🔗 Nouvelle connexion WebSocket Go-Frontend")
-	
-	for {
-		var message map[string]interface{}
-		err := conn.ReadJSON(&message)
-		if err != nil {
-			log.Printf("Erreur lecture WebSocket: %v", err)
-			break
-		}
-		
-		// Go traite les messages JavaScript nativement
-		fs.handleJSMessage(message, conn)
+	// SVELTE PHILOSOPHY: Trigger reactivity
+	select {
+	case rs.channels["updates"] <- fmt.Sprintf("count=%d", newCount):
+	default:
 	}
 }
 
-func (fs *FrontendServer) handleJSMessage(message map[string]interface{}, conn WebSocketConnection) {
-	// Go qui comprend et répond aux messages JavaScript
-	msgType, ok := message["type"].(string)
-	if !ok {
-		return
+func (rs *ReactiveState) GetCount() int {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+	return rs.count
+}
+
+func (rs *ReactiveState) GetDoubled() int {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+	return rs.doubled
+}
+
+func (rs *ReactiveState) AddUser() {
+	rs.mu.Lock()
+	rs.users++
+	rs.mu.Unlock()
+	
+	select {
+	case rs.channels["updates"] <- fmt.Sprintf("users=%d", rs.users):
+	default:
+	}
+}
+
+func (rs *ReactiveState) GetUsers() int {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+	return rs.users
+}
+
+func (rs *ReactiveState) GetLastUpdate() string {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+	return rs.lastUpdate
+}
+
+// ===== HTML GENERATION - GO PURE (Svelte-like components) =====
+
+// SVELTE COMPONENT PHILOSOPHY: Single file component logic
+func (rs *ReactiveState) generateHTML() string {
+	// SVELTE THINKING: Template + Logic + Style in one place
+	// Go string building = Svelte template compilation
+	
+	var html strings.Builder
+	
+	// HTML Structure (Svelte-like template)
+	html.WriteString("<!DOCTYPE html>\n")
+	html.WriteString("<html>\n<head>\n")
+	html.WriteString("<title>Go-Svelte Philosophy</title>\n")
+	html.WriteString("<meta charset=\"utf-8\">\n")
+	html.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+	
+	// SVELTE <style> - Go string = Svelte CSS
+	html.WriteString("<style>\n")
+	html.WriteString(rs.generateCSS())
+	html.WriteString("</style>\n")
+	html.WriteString("</head>\n<body>\n")
+	
+	// SVELTE {#each} logic - Go loops = Svelte iterations  
+	html.WriteString("<div class=\"container\">\n")
+	html.WriteString("<h1>🚀 Go Frontend with Svelte Philosophy</h1>\n")
+	html.WriteString("<div class=\"badge\">Zero JS/CSS/HTML imports - Pure Go thinking like Svelte</div>\n")
+	
+	// SVELTE REACTIVE DISPLAY - Go string formatting = Svelte interpolation
+	rs.mu.RLock()
+	count := rs.count
+	doubled := rs.doubled
+	users := rs.users
+	lastUpdate := rs.lastUpdate
+	rs.mu.RUnlock()
+	
+	html.WriteString("<div class=\"stats\">\n")
+	
+	// Stat cards (Svelte component style)
+	html.WriteString(rs.generateStatCard("Count", strconv.Itoa(count), "🔢"))
+	html.WriteString(rs.generateStatCard("Doubled", strconv.Itoa(doubled), "✖️"))
+	html.WriteString(rs.generateStatCard("Users", strconv.Itoa(users), "👥"))
+	html.WriteString(rs.generateStatCard("Last Update", lastUpdate, "⏰"))
+	
+	html.WriteString("</div>\n")
+	
+	// SVELTE BUTTONS - Go forms = Svelte event handlers
+	html.WriteString("<div class=\"controls\">\n")
+	html.WriteString("<button onclick=\"fetch('/increment')\">➕ Increment</button>\n")
+	html.WriteString("<button onclick=\"fetch('/decrement')\">➖ Decrement</button>\n")
+	html.WriteString("<button onclick=\"fetch('/add-user')\">👤 Add User</button>\n")
+	html.WriteString("<button onclick=\"fetch('/reset')\">🔄 Reset</button>\n")
+	html.WriteString("</div>\n")
+	
+	// SVELTE REACTIVITY - Go = Auto-refresh like Svelte
+	html.WriteString("<div class=\"auto-refresh\">\n")
+	html.WriteString("<p>🔄 Auto-refreshing every 2 seconds (Svelte-like reactivity)</p>\n")
+	html.WriteString("</div>\n")
+	
+	html.WriteString("</div>\n")
+	
+	// SVELTE <script> - Go JavaScript = Svelte client-side
+	html.WriteString("<script>\n")
+	html.WriteString(rs.generateJavaScript())
+	html.WriteString("</script>\n")
+	
+	html.WriteString("</body>\n</html>")
+	
+	return html.String()
+}
+
+// SVELTE CSS - Go string building = Svelte style compilation
+func (rs *ReactiveState) generateCSS() string {
+	var css strings.Builder
+	
+	css.WriteString("body {\n")
+	css.WriteString("  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n")
+	css.WriteString("  max-width: 900px;\n")
+	css.WriteString("  margin: 0 auto;\n")
+	css.WriteString("  padding: 20px;\n")
+	css.WriteString("  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n")
+	css.WriteString("  min-height: 100vh;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".container {\n")
+	css.WriteString("  background: white;\n")
+	css.WriteString("  border-radius: 15px;\n")
+	css.WriteString("  padding: 30px;\n")
+	css.WriteString("  box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n")
+	css.WriteString("}\n")
+	
+	css.WriteString("h1 {\n")
+	css.WriteString("  color: #333;\n")
+	css.WriteString("  text-align: center;\n")
+	css.WriteString("  margin-bottom: 20px;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".badge {\n")
+	css.WriteString("  background: #4CAF50;\n")
+	css.WriteString("  color: white;\n")
+	css.WriteString("  padding: 8px 15px;\n")
+	css.WriteString("  border-radius: 20px;\n")
+	css.WriteString("  font-size: 13px;\n")
+	css.WriteString("  text-align: center;\n")
+	css.WriteString("  margin-bottom: 30px;\n")
+	css.WriteString("  font-weight: bold;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".stats {\n")
+	css.WriteString("  display: grid;\n")
+	css.WriteString("  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n")
+	css.WriteString("  gap: 20px;\n")
+	css.WriteString("  margin: 30px 0;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".stat-card {\n")
+	css.WriteString("  background: #f8f9fa;\n")
+	css.WriteString("  padding: 20px;\n")
+	css.WriteString("  border-radius: 10px;\n")
+	css.WriteString("  border-left: 4px solid #667eea;\n")
+	css.WriteString("  text-align: center;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".stat-emoji {\n")
+	css.WriteString("  font-size: 24px;\n")
+	css.WriteString("  margin-bottom: 10px;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".stat-title {\n")
+	css.WriteString("  font-size: 14px;\n")
+	css.WriteString("  color: #666;\n")
+	css.WriteString("  margin-bottom: 5px;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".stat-value {\n")
+	css.WriteString("  font-size: 32px;\n")
+	css.WriteString("  font-weight: bold;\n")
+	css.WriteString("  color: #333;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".controls {\n")
+	css.WriteString("  display: flex;\n")
+	css.WriteString("  gap: 15px;\n")
+	css.WriteString("  justify-content: center;\n")
+	css.WriteString("  flex-wrap: wrap;\n")
+	css.WriteString("  margin: 30px 0;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString("button {\n")
+	css.WriteString("  background: linear-gradient(45deg, #667eea, #764ba2);\n")
+	css.WriteString("  color: white;\n")
+	css.WriteString("  border: none;\n")
+	css.WriteString("  padding: 12px 24px;\n")
+	css.WriteString("  border-radius: 25px;\n")
+	css.WriteString("  cursor: pointer;\n")
+	css.WriteString("  font-size: 16px;\n")
+	css.WriteString("  font-weight: bold;\n")
+	css.WriteString("  transition: transform 0.2s;\n")
+	css.WriteString("}\n")
+	
+	css.WriteString("button:hover {\n")
+	css.WriteString("  transform: translateY(-2px);\n")
+	css.WriteString("}\n")
+	
+	css.WriteString(".auto-refresh {\n")
+	css.WriteString("  text-align: center;\n")
+	css.WriteString("  margin-top: 30px;\n")
+	css.WriteString("  color: #666;\n")
+	css.WriteString("  font-style: italic;\n")
+	css.WriteString("}\n")
+	
+	return css.String()
+}
+
+// SVELTE COMPONENT HELPER - Go function = Svelte component
+func (rs *ReactiveState) generateStatCard(title, value, emoji string) string {
+	var card strings.Builder
+	
+	card.WriteString("<div class=\"stat-card\">\n")
+	card.WriteString(fmt.Sprintf("  <div class=\"stat-emoji\">%s</div>\n", emoji))
+	card.WriteString(fmt.Sprintf("  <div class=\"stat-title\">%s</div>\n", title))
+	card.WriteString(fmt.Sprintf("  <div class=\"stat-value\">%s</div>\n", value))
+	card.WriteString("</div>\n")
+	
+	return card.String()
+}
+
+// SVELTE CLIENT REACTIVITY - Go JavaScript = Svelte client updates
+func (rs *ReactiveState) generateJavaScript() string {
+	var js strings.Builder
+	
+	js.WriteString("// SVELTE PHILOSOPHY: Auto-refresh reactivity\n")
+	js.WriteString("setInterval(() => {\n")
+	js.WriteString("  fetch('/api/state')\n")
+	js.WriteString("    .then(response => response.json())\n")
+	js.WriteString("    .then(data => {\n")
+	js.WriteString("      // Go-generated JS = Svelte reactive updates\n")
+	js.WriteString("      if (data.shouldRefresh) {\n")
+	js.WriteString("        window.location.reload();\n")
+	js.WriteString("      }\n")
+	js.WriteString("    })\n")
+	js.WriteString("    .catch(() => {});\n")
+	js.WriteString("}, 2000);\n")
+	
+	js.WriteString("\n// SVELTE-style button interactions\n")
+	js.WriteString("document.addEventListener('click', (e) => {\n")
+	js.WriteString("  if (e.target.tagName === 'BUTTON') {\n")
+	js.WriteString("    e.target.style.transform = 'scale(0.95)';\n")
+	js.WriteString("    setTimeout(() => {\n")
+	js.WriteString("      e.target.style.transform = '';\n")
+	js.WriteString("      window.location.reload();\n")
+	js.WriteString("    }, 100);\n")
+	js.WriteString("  }\n")
+	js.WriteString("});\n")
+	
+	return js.String()
+}
+
+// ===== UTILITY FUNCTIONS (Go Pure) =====
+
+func getCurrentTime() string {
+	return time.Now().Format("15:04:05")
+}
+
+// ===== GLOBAL STATE (Svelte Store Philosophy) =====
+
+var globalReactiveState = NewReactiveState()
+
+// ===== HTTP HANDLERS (Go + Svelte Philosophy) =====
+
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	// SVELTE THINKING: Component renders with current state
+	html := globalReactiveState.generateHTML()
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(html))
+	
+	fmt.Printf("🏠 Home rendered - Count: %d, Users: %d\n", 
+		globalReactiveState.GetCount(), globalReactiveState.GetUsers())
+}
+
+func incrementHandler(w http.ResponseWriter, r *http.Request) {
+	// SVELTE PHILOSOPHY: Action triggers reactive update
+	newCount := globalReactiveState.GetCount() + 1
+	globalReactiveState.SetCount(newCount)
+	
+	fmt.Printf("➕ Increment - New count: %d (doubled: %d)\n", 
+		newCount, globalReactiveState.GetDoubled())
+	
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func decrementHandler(w http.ResponseWriter, r *http.Request) {
+	newCount := globalReactiveState.GetCount() - 1
+	if newCount < 0 {
+		newCount = 0
+	}
+	globalReactiveState.SetCount(newCount)
+	
+	fmt.Printf("➖ Decrement - New count: %d\n", newCount)
+	
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func addUserHandler(w http.ResponseWriter, r *http.Request) {
+	globalReactiveState.AddUser()
+	
+	fmt.Printf("👤 User added - Total users: %d\n", globalReactiveState.GetUsers())
+	
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func resetHandler(w http.ResponseWriter, r *http.Request) {
+	globalReactiveState.SetCount(0)
+	globalReactiveState.mu.Lock()
+	globalReactiveState.users = 0
+	globalReactiveState.mu.Unlock()
+	
+	fmt.Printf("🔄 Reset - All counters cleared\n")
+	
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func stateAPIHandler(w http.ResponseWriter, r *http.Request) {
+	// SVELTE THINKING: API for reactive updates
+	state := map[string]interface{}{
+		"count":        globalReactiveState.GetCount(),
+		"doubled":      globalReactiveState.GetDoubled(),
+		"users":        globalReactiveState.GetUsers(),
+		"lastUpdate":   globalReactiveState.GetLastUpdate(),
+		"shouldRefresh": false,
 	}
 	
-	switch msgType {
-	case "increment", "decrement", "reset":
-		// Logique de compteur Go-React
-		value := 0
-		if v, ok := message["value"]; ok {
-			if vFloat, ok := v.(float64); ok {
-				value = int(vFloat)
-			}
-		}
-		
-		// État partagé Go ↔ JavaScript
-		fs.reactiveData["counter"] = value
-		
-		response := map[string]interface{}{
-			"type":  "counter-update",
-			"value": value,
-			"timestamp": time.Now().Unix(),
-		}
-		
-		conn.WriteJSON(response)
-		
-	case "js-event":
-		// Go traite les événements JavaScript
-		if eventData, ok := message["event"].(map[string]interface{}); ok {
-			fmt.Printf("🎯 Go reçoit événement JS: %+v\n", eventData)
-		}
-		
-	case "ping":
-		// Heartbeat Go ↔ Frontend
-		pong := map[string]interface{}{
-			"type": "pong",
-			"timestamp": time.Now().Unix(),
-		}
-		conn.WriteJSON(pong)
-	}
+	w.Header().Set("Content-Type", "application/json")
+	
+	// Go JSON encoding = Svelte data serialization
+	jsonData := fmt.Sprintf(`{
+		"count": %d,
+		"doubled": %d,
+		"users": %d,
+		"lastUpdate": "%s",
+		"shouldRefresh": false
+	}`, state["count"], state["doubled"], state["users"], state["lastUpdate"])
+	
+	w.Write([]byte(jsonData))
 }
 
-// Interface WebSocket simplifiée
-type WebSocketConnection interface {
-	ReadJSON(interface{}) error
-	WriteJSON(interface{}) error
-	Close() error
-}
-
-type websocketUpgrader struct{}
-
-func (u websocketUpgrader) Upgrade(w http.ResponseWriter, r *http.Request, h http.Header) (WebSocketConnection, error) {
-	// Simulation WebSocket pour demo
-	return &mockWebSocket{}, nil
-}
-
-type mockWebSocket struct{}
-
-func (m *mockWebSocket) ReadJSON(v interface{}) error { return fmt.Errorf("demo mode") }
-func (m *mockWebSocket) WriteJSON(v interface{}) error { return nil }
-func (m *mockWebSocket) Close() error { return nil }
-
-// ================================================================================
-// SERVEUR HTTP GO-FRONTEND COMPLET
-// ================================================================================
+// ===== MAIN SERVER (Go Simplicity + Svelte Reactivity) =====
 
 func main() {
-	fmt.Println("🚀 NEXUS AXION GO-FRONTEND RÉVOLUTIONNAIRE")
-	fmt.Println("========================================")
-	fmt.Println("✨ Premier Go de l'histoire qui raisonne en JavaScript + CSS pur")
-	fmt.Println("🔗 http://localhost:8080")
-	fmt.Println()
+	fmt.Println("🚀 Go-Svelte Philosophy Server Starting...")
+	fmt.Println("📱 NEXUS AXION: Go reasoning like Svelte for frontend")
+	fmt.Println("✨ Zero external deps - Pure philosophy absorption")
 	
-	// Initialiser serveur frontend Go
-	server := NewFrontendServer()
+	// SVELTE PHILOSOPHY: Component-based routing
+	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/increment", incrementHandler)
+	http.HandleFunc("/decrement", decrementHandler)
+	http.HandleFunc("/add-user", addUserHandler)
+	http.HandleFunc("/reset", resetHandler)
+	http.HandleFunc("/api/state", stateAPIHandler)
 	
-	// Route principale - Go qui génère frontend complet
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// Go channels for background reactivity (Svelte-style)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 		
-		// Template data
-		data := struct {
-			Timestamp string
-		}{
-			Timestamp: time.Now().Format("15:04:05"),
+		for range ticker.C {
+			// Background reactive updates
+			fmt.Printf("🔄 Reactive heartbeat - State: count=%d, users=%d\n", 
+				globalReactiveState.GetCount(), globalReactiveState.GetUsers())
 		}
-		
-		// Go génère HTML avec CSS et JavaScript intégrés
-		htmlContent := server.renderHTML()
-		tmpl := template.Must(template.New("index").Parse(htmlContent))
-		tmpl.Execute(w, data)
-	})
+	}()
 	
-	// WebSocket pour réactivité temps réel
-	http.HandleFunc("/ws", server.handleWebSocket)
+	// Port configuration for deployment
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	
-	// API pour état global
-	http.HandleFunc("/api/state", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		state := map[string]interface{}{
-			"connections": 1,
-			"timestamp":   time.Now().Unix(),
-			"counter":     server.reactiveData["counter"],
-			"components":  len(server.components),
-			"animations":  len(server.animations.Animations),
-		}
-		json.NewEncoder(w).Encode(state)
-	})
+	fmt.Printf("🌐 Server listening on port %s\n", port)
+	fmt.Printf("🔗 Open: http://localhost:%s\n", port)
+	fmt.Println("💡 Philosophy: Go thinking like Svelte - Zero simulation!")
 	
-	fmt.Println("🎯 Go-Frontend prêt ! Fonctionnalités révolutionnaires :")
-	fmt.Println("   ⚡ Compteur réactif Go-React")
-	fmt.Println("   🎨 Animations CSS générées par Go")
-	fmt.Println("   🔗 WebSocket Go ↔ JavaScript")
-	fmt.Println("   📡 État global partagé")
-	fmt.Println("   🚀 Zéro dépendance externe")
-	fmt.Println()
-	
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
